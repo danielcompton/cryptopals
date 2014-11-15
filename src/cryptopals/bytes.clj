@@ -7,17 +7,20 @@
 (defn bytes->hex [ba]
   (Hex/encodeHexString ba))
 
-(defn b64->bytes [s]
+(defn b64->bytes [^String s]
   (Base64/decodeBase64 s))
 
 (defn bytes->b64 [ba]
   (String. (Base64/encodeBase64 ba) "UTF-8"))
 
-(defn xor [ba1 ba2]
-  (amap ba1
-        idx
-        ret
-        (byte (bit-xor (aget ^bytes ba1 idx) (aget ^bytes ba2 idx)))))
+(defn xor
+  "XOR's ba with a repeating key"
+  [^bytes key ^bytes ba]
+  (let [key-length (alength key)]
+    (amap ba
+          idx
+          ret
+          (byte (bit-xor (aget ^bytes ba idx) (aget ^bytes key (mod idx key-length)))))))
 
 (defn sbyte->byte [b]
   (bit-and b 0xff))
