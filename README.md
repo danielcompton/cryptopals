@@ -1,4 +1,4 @@
-cryptopals
+Cryptopals
 ==========
 
 Cryptopals exercises in Clojure
