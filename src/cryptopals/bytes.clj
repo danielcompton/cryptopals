@@ -1,6 +1,6 @@
 (ns cryptopals.bytes
-  (:require [cryptopals.util :as util])
-  (:import [org.apache.commons.codec.binary Base64 Hex]))
+  (:import [org.apache.commons.codec.binary Base64 Hex]
+           (java.nio ByteBuffer)))
 
 (defn hex->bytes [s]
   (Hex/decodeHex (char-array s)))
@@ -33,3 +33,5 @@
   (unchecked-byte b))
 
 (def byte-0-255 (map #(byte-array 1 (byte->sbyte %)) (range 0 255)))
+
+

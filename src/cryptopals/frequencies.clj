@@ -4,7 +4,8 @@
             [clojure.data.priority-map :as p]
             [clojure.set :as set]
             [clojure.string :as str]
-            [cryptopals.bytes :as b]))
+            [cryptopals.bytes :as b])
+  (:import [java.nio ByteBuffer]))
 
 (def english-frequencies
   "from http://www.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html"
@@ -93,3 +94,10 @@
     (fn [[k v]]
       (- (get m2 k) v))
     m1))
+
+;; TODO: check if faster with bytebuffer
+(defn hamming-distance [ba1 ba2]
+  (.bitCount (BigInteger. (b/xor ba1 ba2))))
+
+(defn hamming-distance-str [^String s1 ^String s2]
+  (hamming-distance (.getBytes s1) (.getBytes s2)))

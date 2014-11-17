@@ -47,3 +47,5 @@
                        "a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f")]
       (is (= (b/bytes->hex (b/xor (.getBytes "ICE") (.getBytes lyric)))
              xor-val)))))
+(deftest break-repeating-key-xor
+  (testing "6"))

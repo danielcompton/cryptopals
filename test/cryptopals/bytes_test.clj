@@ -5,6 +5,8 @@
             [cryptopals.bytes :refer :all])
   (:import [java.util Arrays]))
 
+(def bigger-ints (gen/sized (fn [size] (gen/resize (* size size) gen/pos-int))))
+
 (defspec xor-roundtrip
          10000
          (prop/for-all [key (gen/such-that
@@ -18,4 +20,5 @@
          (prop/for-all [^bytes ba gen/bytes]
                        (Arrays/equals ba ^bytes (hex->bytes (bytes->hex ba)))
                        (Arrays/equals ba ^bytes (b64->bytes (bytes->b64 ba)))))
+
 
