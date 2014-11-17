@@ -3,7 +3,9 @@
   (:require [cryptopals.util :as util]
             [clojure.data.priority-map :as p]
             [clojure.set :as set]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cryptopals.bytes :as b]
+            [clojure.tools.trace :as t :refer [trace]]))
 
 (def english-frequencies
   "from http://www.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html"
@@ -41,7 +43,7 @@
 (defn frequencies
   "Returns a map from distinct items in coll to the number of times
   they appear."
-  {:added "1.2"
+  {:added  "1.2"
    :static true}
   [coll]
   (reduce (fn [counts x]
@@ -57,18 +59,37 @@
 
 (defn score-text [expected-frequencies text]
   (let [word-count (inc (get (clojure.core/frequencies text) \space 0))
+        non-word-chars (count (str/replace text #"(\w| )" ""))
         trimmed-text (str/lower-case (str/replace text #"\W" "")) ;; Remove non word characters
-        char-per-word (/ (count trimmed-text) word-count)
+        expected-word-count (/ (count text) (inc std-char-per-word))
         freq (frequencies trimmed-text)
+        take-amt (min 6 (quot (count freq) 2))
         top6exp (set (keys (take 6 expected-frequencies)))
         bot6exp (set (keys (take-last 6 expected-frequencies)))
-        top6found (set (keys (take 6 freq)))
-        bot6found (set (keys (take-last 6 freq)))]
-    (+ (count (set/intersection top6exp top6found))
-       (count (set/intersection bot6exp bot6found))
-       (char-score std-char-per-word char-per-word 4))))
+        top6found (set (keys (take take-amt freq)))
+        bot6found (set (keys (take-last take-amt freq)))]
+    {:top6       (count (set/intersection top6exp top6found))
+     :bot6       (count (set/intersection bot6exp bot6found))
+     :word-count (- (Math/abs ^Double (- word-count expected-word-count)))
+     :non-word   (- (if (<= non-word-chars 2)
+                      0
+                      non-word-chars))}))
 
 (def score-english-text (partial score-text english-frequencies))
+
+(defn crack-key [keys ^bytes ciphertext]
+  (->> (map (fn [key ba]
+              (let [xor-val (b/xor key ba)
+                    str-val (String. ^bytes xor-val "UTF-8")
+                    reasons (score-english-text str-val)
+                    score (apply + (vals reasons))]
+                {:str str-val :key key :reasons reasons :score score}))
+            keys
+            (repeat ciphertext))
+       ;;(remove #(<= (:score %) 1))
+       #_(reduce (fn [m {:keys [score] :as k}]
+                 (assoc m k score))
+               (p/priority-map-by >))))
 
 (defn frequency-diff [m1 m2]
   "Diffs two maps and returns a similarity score"

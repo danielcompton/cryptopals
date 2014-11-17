@@ -31,6 +31,9 @@
   "Convert unsigned byte to signed byte"
   (unchecked-byte b))
 
+(def byte-0-255 (map #(byte-array 1 (byte->sbyte %)) (range 0 255)))
+
+
 #_(map xor
      (map #(byte-array 1 (byte->sbyte %)) (range 0 256))
      (hex->bytes _))

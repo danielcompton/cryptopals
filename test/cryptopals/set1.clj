@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [cryptopals.bytes :as b]
             [cryptopals.frequencies :as f]
-            [clojure.data.priority-map :as p]))
+            [clojure.java.io :as io]))
 
 (deftest hex-to-base64
   (testing "1"
@@ -22,19 +22,19 @@
 (deftest single-byte-xor
   (testing "3"
     (is (= "Cooking MC's like a pound of bacon"
-          (let [hex (b/hex->bytes
-                     "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")]
-           (->> (map (fn [key ba]
-                       (let [xor-val (b/xor key ba)
-                             str-val (String. ^bytes xor-val "UTF-8")]
-                         {:str str-val :key key :score (f/score-english-text str-val)}))
-                     (map #(byte-array 1 (b/byte->sbyte %)) (range 0 256))
-                     (repeat hex))
-
-                (reduce (fn [m {:keys [score] :as k}]
-                          (assoc m k score))
-                        (p/priority-map-by >))
+           (->> (f/crack-key
+                  b/byte-0-255
+                  (b/hex->bytes
+                    "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"))
+                (sort-by :score >)
                 (first)
-                (key)
-                :str))))))
+                :str)))))
 
+(deftest detect-single-char-xor
+  (with-open [test-file (io/reader (io/resource "4.txt"))]
+    (is (= "Now that the party is jumping\n"
+           (->> (mapcat (partial f/crack-key b/byte-0-255)
+                        (map b/hex->bytes (line-seq test-file)))
+                (sort-by :score >)
+                (first)
+                (:str))))))
