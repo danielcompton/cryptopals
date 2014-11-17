@@ -2,9 +2,7 @@
   (:require [clojure.test :refer :all]
             [cryptopals.bytes :as b]
             [cryptopals.frequencies :as f]
-            [cryptopals.util :as u]
-            [clojure.data.priority-map :as p]
-            [clojure.set :as set]))
+            [clojure.data.priority-map :as p]))
 
 (deftest hex-to-base64
   (testing "1"
@@ -40,7 +38,3 @@
                 (key)
                 :str))))))
 
-
-#_(map b/xor
-     (map #(byte-array 1 (b/byte->sbyte %)) (range 0 256))
-     (b/hex->bytes "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"))
