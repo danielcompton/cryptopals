@@ -4,8 +4,7 @@
             [clojure.data.priority-map :as p]
             [clojure.set :as set]
             [clojure.string :as str]
-            [cryptopals.bytes :as b]
-            [clojure.tools.trace :as t :refer [trace]]))
+            [cryptopals.bytes :as b]))
 
 (def english-frequencies
   "from http://www.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html"
@@ -86,10 +85,7 @@
                 {:str str-val :key key :reasons reasons :score score}))
             keys
             (repeat ciphertext))
-       ;;(remove #(<= (:score %) 1))
-       #_(reduce (fn [m {:keys [score] :as k}]
-                 (assoc m k score))
-               (p/priority-map-by >))))
+       (remove #(<= (:score %) 0))))
 
 (defn frequency-diff [m1 m2]
   "Diffs two maps and returns a similarity score"
