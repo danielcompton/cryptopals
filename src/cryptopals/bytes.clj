@@ -1,4 +1,5 @@
 (ns cryptopals.bytes
+  (:require [cryptopals.util :as util])
   (:import [org.apache.commons.codec.binary Base64 Hex]))
 
 (defn hex->bytes [s]
@@ -23,4 +24,13 @@
           (byte (bit-xor (aget ^bytes ba idx) (aget ^bytes key (mod idx key-length)))))))
 
 (defn sbyte->byte [b]
+  "Convert signed byte to unsigned byte"
   (bit-and b 0xff))
+
+(defn byte->sbyte [b]
+  "Convert unsigned byte to signed byte"
+  (unchecked-byte b))
+
+#_(map xor
+     (map #(byte-array 1 (byte->sbyte %)) (range 0 256))
+     (hex->bytes _))

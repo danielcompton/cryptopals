@@ -1,6 +1,10 @@
 (ns cryptopals.set1
   (:require [clojure.test :refer :all]
-            [cryptopals.bytes :as b]))
+            [cryptopals.bytes :as b]
+            [cryptopals.frequencies :as f]
+            [cryptopals.util :as u]
+            [clojure.data.priority-map :as p]
+            [clojure.set :as set]))
 
 (deftest hex-to-base64
   (testing "1"
@@ -16,3 +20,27 @@
       (is (= (b/bytes->hex (b/xor (b/hex->bytes hex1)
                                   (b/hex->bytes hex2)))
              hex3)))))
+
+(deftest single-byte-xor
+  (testing "3"
+    (is (= "Cooking MC's like a pound of bacon"
+          (let [hex (b/hex->bytes
+                     "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736")]
+           (->> (map (fn [key ba]
+                       (let [xor-val (b/xor key ba)
+                             str-val (String. ^bytes xor-val "UTF-8")]
+                         {:str str-val :key key :score (f/score-english-text str-val)}))
+                     (map #(byte-array 1 (b/byte->sbyte %)) (range 0 256))
+                     (repeat hex))
+
+                (reduce (fn [m {:keys [score] :as k}]
+                          (assoc m k score))
+                        (p/priority-map-by >))
+                (first)
+                (key)
+                :str))))))
+
+
+#_(map b/xor
+     (map #(byte-array 1 (b/byte->sbyte %)) (range 0 256))
+     (b/hex->bytes "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"))
