@@ -1,103 +1,105 @@
 (ns cryptopals.frequencies
-  (:refer-clojure :exclude [frequencies])
   (:require [cryptopals.util :as util]
-            [clojure.data.priority-map :as p]
-            [clojure.set :as set]
             [clojure.string :as str]
-            [cryptopals.bytes :as b])
-  (:import [java.nio ByteBuffer]))
+            [cryptopals.bytes :as b]
+            [clojure.tools.trace :as t])
+  (:import [java.util Arrays]))
 
-(def english-frequencies
-  "from http://www.math.cornell.edu/~mec/2003-2004/cryptography/subs/frequencies.html"
-  (p/priority-map-by >
-                     \e 0.1202
-                     \t 0.0910
-                     \a 0.0812
-                     \o 0.0768
-                     \i 0.0731
-                     \n 0.0695
-                     \s 0.0628
-                     \r 0.0602
-                     \h 0.0592
-                     \d 0.0432
-                     \l 0.0398
-                     \u 0.0288
-                     \c 0.0271
-                     \m 0.0261
-                     \f 0.0230
-                     \y 0.0211
-                     \w 0.0209
-                     \g 0.0203
-                     \p 0.0182
-                     \b 0.0149
-                     \v 0.0111
-                     \k 0.0069
-                     \x 0.0017
-                     \q 0.0011
-                     \j 0.0010
-                     \z 0.0007))
+(def english-frequencies-space
+  "from http://www.macfreek.nl/memory/Letter_Distribution"
+  (hash-map
+    \space 18.28846265
+    \e 10.26665037
+    \t 7.51699827
+    \a 6.53216702
+    \o 6.15957725
+    \n 5.71201113
+    \i 5.66844326
+    \s 5.31700534
+    \r 4.98790855
+    \h 4.97856396
+    \l 3.31754796
+    \d 3.28292310
+    \u 2.27579536
+    \c 2.23367596
+    \m 2.02656783
+    \f 1.98306716
+    \w 1.70389377
+    \g 1.62490441
+    \p 1.50432428
+    \y 1.42766662
+    \b 1.25888074
+    \v 0.79611644
+    \k 0.56096272
+    \x 0.14092016
+    \j 0.09752181
+    \q 0.08367550
+    \z 0.05128469))
 
-(def std-char-per-word "http://www.wolframalpha.com/input/?i=average+english+word+length"
-  5.1)
+(defn normalise
+  "Normalises the values in a map"
+  ([m]
+    (let [total (reduce + (vals m))]
+      (normalise m total)))
+  ([m total]
+    (util/fmap #(/ % total) m)))
 
-(defn frequencies
-  "Returns a map from distinct items in coll to the number of times
-  they appear."
-  {:added  "1.2"
-   :static true}
-  [coll]
-  (reduce (fn [counts x]
-            (assoc counts x (inc (get counts x 0))))
-          (p/priority-map-by >) coll))
+(def alphabet-0 (conj (zipmap (map char (range 97 123)) (repeat 26 0)) [\space 0]))
 
-(defn normalise-frequencies [m]
-  (let [denom (reduce + (vals m))]
-    (util/fmap #(/ % denom) m)))
+(defn least-squares [expected observed]
+  (assert (= 27 (count expected) (count observed)))
+  (->> observed
+       (merge-with (fn [exp obs] (Math/pow (- obs exp) 2)) expected)
+       (vals)
+       (apply +)))
 
-(defn char-score [expected actual score-out-of]
-  (max 0 (- score-out-of (Math/abs ^double (- expected actual)))))
+;; TODO make this use arrays instead of maps. Much faster.
+(defn score-text [expected text]
+  (let [trimmed-text (str/lower-case (str/replace text #"[^a-zA-Z ]" ""))
+        char-count (count text)
+        observed (normalise (merge alphabet-0 (frequencies trimmed-text)) char-count)
+        non-ascii-chars (count (str/replace text #"\p{ASCII}" ""))
+        punct-chars (count (str/replace text #"[^\p{Punct}]" ""))]
+    (if (zero? (count trimmed-text))
+      nil
+      (+ (least-squares expected observed)
+         ;; Could check for capital letters in the middle of a sentence
+         (* 0.05 non-ascii-chars)
+         (* 0.02 (if (< punct-chars 2) 0 punct-chars))))))
 
-(defn score-text [expected-frequencies text]
-  (let [word-count (inc (get (clojure.core/frequencies text) \space 0))
-        non-word-chars (count (str/replace text #"(\w| )" ""))
-        trimmed-text (str/lower-case (str/replace text #"\W" "")) ;; Remove non word characters
-        expected-word-count (/ (count text) (inc std-char-per-word))
-        freq (frequencies trimmed-text)
-        take-amt (min 6 (quot (count freq) 2))
-        top6exp (set (keys (take 6 expected-frequencies)))
-        bot6exp (set (keys (take-last 6 expected-frequencies)))
-        top6found (set (keys (take take-amt freq)))
-        bot6found (set (keys (take-last take-amt freq)))]
-    {:top6       (count (set/intersection top6exp top6found))
-     :bot6       (count (set/intersection bot6exp bot6found))
-     :word-count (- (Math/abs ^Double (- word-count expected-word-count)))
-     :non-word   (- (if (<= non-word-chars 2)
-                      0
-                      non-word-chars))}))
-
-(def score-english-text (partial score-text english-frequencies))
+(def score-english-text (partial score-text (normalise english-frequencies-space)))
 
 (defn crack-key [keys ^bytes ciphertext]
   (->> (map (fn [key ba]
               (let [xor-val (b/xor key ba)
                     str-val (String. ^bytes xor-val "UTF-8")
-                    reasons (score-english-text str-val)
-                    score (apply + (vals reasons))]
-                {:str str-val :key key :reasons reasons :score score}))
+                    score (score-english-text str-val)]
+                {:str str-val :key key :score score}))
             keys
             (repeat ciphertext))
-       (remove #(<= (:score %) 0))))
+       (remove #(nil? (:score %)))))
 
-(defn frequency-diff [m1 m2]
-  "Diffs two maps and returns a similarity score"
-  (map
-    (fn [[k v]]
-      (- (get m2 k) v))
-    m1))
-
-;; TODO: check if faster with bytebuffer
+;; TODO: check if faster with LongBuffer
 (defn hamming-distance [ba1 ba2]
   (.bitCount (BigInteger. (b/xor ba1 ba2))))
 
 (defn hamming-distance-str [^String s1 ^String s2]
   (hamming-distance (.getBytes s1) (.getBytes s2)))
+
+(defn keysize-score
+  [^bytes ba size]
+  (let [samples 1]
+    (->> (range 0 (alength ba) size)
+         (partition 2 1)
+         (map (fn [[^Long from ^Long to]] (Arrays/copyOfRange ba from to)))
+         (partition 2 1)
+         (map (fn [[ba1 ba2]] (/ (hamming-distance ba1 ba2) size samples)))
+         (take samples)
+         (reduce +)
+         (float)
+         (hash-map :key-size size :score))))
+
+(defn guess-keysize
+  [^bytes ba from to]
+  (->> (map (partial keysize-score ba) (range from (inc to)))
+       (sort-by :score <)))

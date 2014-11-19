@@ -26,7 +26,7 @@
                   b/byte-0-255
                   (b/hex->bytes
                     "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736"))
-                (sort-by :score >)
+                (sort-by :score)
                 (first)
                 :str)))))
 
@@ -36,7 +36,7 @@
       (is (= "Now that the party is jumping\n"
              (->> (mapcat (partial f/crack-key b/byte-0-255)
                           (map b/hex->bytes (line-seq test-file)))
-                  (sort-by :score >)
+                  (sort-by :score)
                   (first)
                   (:str)))))))
 
@@ -47,5 +47,9 @@
                        "a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f")]
       (is (= (b/bytes->hex (b/xor (.getBytes "ICE") (.getBytes lyric)))
              xor-val)))))
+
 (deftest break-repeating-key-xor
-  (testing "6"))
+  (testing "6"
+    (let [ba (b/b64->bytes (apply str (line-seq (io/reader (io/resource "6.txt")))))
+          probable-keysizes (take 3 (f/guess-keysize ba 2 40))]
+      probable-keysizes)))
