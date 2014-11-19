@@ -1,8 +1,7 @@
 (ns cryptopals.frequencies
   (:require [cryptopals.util :as util]
             [clojure.string :as str]
-            [cryptopals.bytes :as b]
-            [clojure.tools.trace :as t])
+            [cryptopals.bytes :as b])
   (:import [java.util Arrays]))
 
 (def english-frequencies-space
