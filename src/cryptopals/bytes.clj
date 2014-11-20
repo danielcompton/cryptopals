@@ -35,7 +35,7 @@
 (def byte-0-255 (map #(byte-array 1 (byte->sbyte %)) (range 0 255)))
 
 ;;TODO Could rework this as a matrix operation
-(defn deinterlace-array [^bytes ba n]
+#_(defn deinterlace-array [^bytes ba n]
   (let [ary-length (alength ba)
         partition-length (int (Math/ceil (/ ary-length n)))
         remainder (rem ary-length n)
