@@ -96,7 +96,7 @@
          (take samples)
          (reduce +)
          (float)
-         (hash-map :key-size size :score))))
+         (hash-map :keysize size :score))))
 
 (defn guess-keysize
   [^bytes ba from to]

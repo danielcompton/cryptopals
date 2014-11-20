@@ -17,3 +17,14 @@
                      out))
                  (transient {})
                  a))))
+
+(defn interleave-all
+  "Analogy: partition:partition-all :: interleave:interleave-all.
+  From prismatic/plumbing"
+  [& colls]
+  (lazy-seq
+    ((fn helper [seqs]
+       (when (seq seqs)
+         (concat (map first seqs)
+                 (lazy-seq (helper (keep next seqs))))))
+      (keep seq colls))))

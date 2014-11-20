@@ -52,4 +52,8 @@
   (testing "6"
     (let [ba (b/b64->bytes (apply str (line-seq (io/reader (io/resource "6.txt")))))
           probable-keysizes (take 3 (f/guess-keysize ba 2 40))]
-      probable-keysizes)))
+      (for [keysize probable-keysizes
+            #_#_ partition (vec (b/deinterlace-array ba (:keysize keysize)))]
+        (->> (f/crack-key b/byte-0-255 (nth partition 0))
+             (sort-by :score)
+             (take 20))))))
