@@ -68,15 +68,33 @@
 
 (def score-english-text (partial score-text (normalise english-frequencies-space)))
 
-(defn crack-key [keys ^bytes ciphertext]
+(defn score-byte-arrays [key-bytes ciphertext]
   (->> (map (fn [key ba]
               (let [xor-val (b/xor key ba)
                     str-val (String. ^bytes xor-val "UTF-8")
                     score (score-english-text str-val)]
                 {:str str-val :key key :score score}))
-            keys
+            key-bytes
             (repeat ciphertext))
-       (remove #(nil? (:score %)))))
+       (remove #(nil? (:score %)))
+       (sort-by :score)
+       (first)))
+
+(defn crack-key
+  ([key-bytes ^bytes ciphertext]
+    (crack-key key-bytes 1 ciphertext))
+  ([key-bytes key-length ^bytes ciphertext]
+    (let [partitions (vec (b/deinterlace-array ba key-length))]
+      (-> (map #(:key (score-byte-arrays key-bytes %)) partitions)
+          (byte-array)
+          (score-byte-arrays ciphertext)))
+
+    ;;let deinterlace-array
+    ;;map fn over section of array, return map of score
+    ;;combine key
+    ;;run it through the scorer once more
+
+    ))
 
 ;; TODO: check if faster with LongBuffer
 (defn hamming-distance [ba1 ba2]

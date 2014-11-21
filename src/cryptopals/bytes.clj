@@ -22,7 +22,7 @@
   (let [key-length (alength key)]
     (assert (not (zero? key-length)) "Key length must not be zero")
     (amap ba idx ret
-          (byte (bit-xor (aget ^bytes ba idx) (aget ^bytes key (mod idx key-length)))))))
+      (byte (bit-xor (aget ^bytes ba idx) (aget ^bytes key (mod idx key-length)))))))
 
 (defn sbyte->byte [b]
   "Convert signed byte to unsigned byte"
@@ -34,7 +34,7 @@
 
 (def byte-0-255 (map #(byte-array 1 (byte->sbyte %)) (range 0 255)))
 
-;;TODO Could rework this as a matrix operation
+;;TODO Could rework this as a matrix operation, or reorder the vector instead.
 (defn deinterlace-array [^bytes ba n]
   (let [ary-length (alength ba)
         partition-length (int (Math/ceil (/ ary-length n)))
@@ -43,13 +43,14 @@
                              n
                              remainder)
         ary (areduce ba idx ret (make-array Byte/TYPE n partition-length)
-                     (do idx
-                         (aset ret
-                               (rem idx n)
-                               (quot idx n)
-                               (aget ba idx))
-                         ret))]
+              (do idx
+                  (aset ret
+                        (rem idx n)
+                        (quot idx n)
+                        (aget ba idx))
+                  ret))]
     (amap ary idx ret
-          (aset ary idx (Arrays/copyOf ^bytes (aget ary idx) (if (< idx full-length-arrays)
-                                                               partition-length
-                                                               (dec partition-length)))))))
+      (aset ary idx (Arrays/copyOf ^bytes (aget ary idx) (if (< idx full-length-arrays)
+                                                           partition-length
+                                                           (dec partition-length)))))))
+

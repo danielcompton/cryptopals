@@ -32,8 +32,8 @@
 
 (deftest detect-single-char-xor
   (testing "4"
-    (with-open [test-file (io/reader (io/resource "4.txt"))]
-      (is (= "Now that the party is jumping\n"
+    (is (= "Now that the party is jumping\n"
+           (with-open [test-file (io/reader (io/resource "4.txt"))]
              (->> (mapcat (partial f/crack-key b/byte-0-255)
                           (map b/hex->bytes (line-seq test-file)))
                   (sort-by :score)
@@ -53,7 +53,7 @@
     (let [ba (b/b64->bytes (apply str (line-seq (io/reader (io/resource "6.txt")))))
           probable-keysizes (take 3 (f/guess-keysize ba 2 40))]
       (for [keysize probable-keysizes
-            #_#_ partition (vec (b/deinterlace-array ba (:keysize keysize)))]
-        (->> (f/crack-key b/byte-0-255 (nth partition 0))
+            partition (vec (b/deinterlace-array ba (:keysize keysize)))]
+        (->> (f/crack-key b/byte-0-255 partition)
              (sort-by :score)
              (take 20))))))
